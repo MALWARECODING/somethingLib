@@ -315,7 +315,7 @@ corner(main, 6)
 
 local sidebar = create("Frame", { Name = "Sidebar", BackgroundTransparency = 1, Size = UDim2.new(0, 140, 1, 0), Parent = main })
 
-local LOGO_IMAGE = "rbxthumb://type=Asset&id=126305712600315&w=420&h=420"
+local LOGO_IMAGE = "rbxassetid://126305712600315"
 local LOGO_WIDTH, LOGO_HEIGHT = 101, 45
 create("ImageLabel", {
     Name = "Logo", BackgroundTransparency = 1, Image = LOGO_IMAGE,
@@ -332,7 +332,7 @@ local searchBox = create("TextBox", {Name = "SearchBox", Parent = searchFrame, B
 local searchLine = create("Frame", {Name = "Line", Parent = searchFrame, Size = UDim2.new(0, 0, 0, 2), Position = UDim2.new(0, 0, 1, -2), BackgroundColor3 = c3(Theme.scheme), BackgroundTransparency = 1})
 local searchAnim = 0
 
-local searchDropdown = create("CanvasGroup", {Name = "SearchDropdown", Parent = gui, BackgroundColor3 = c3(Theme.bg), Size = UDim2.fromOffset(134, 0), Position = UDim2.new(0, 0, 0, 0), GroupTransparency = 1, Visible = false, ZIndex = 150})
+local searchDropdown = create("CanvasGroup", {Name = "SearchDropdown", Parent = window, BackgroundColor3 = c3(Theme.bg), Size = UDim2.fromOffset(134, 0), Position = UDim2.new(0, 0, 0, 0), GroupTransparency = 1, Visible = false, ZIndex = 150})
 corner(searchDropdown, 4)
 create("UIStroke", {Color = BLACK, Thickness = 1, ApplyStrokeMode = Enum.ApplyStrokeMode.Border, Parent = searchDropdown})
 local searchList = create("ScrollingFrame", {Parent = searchDropdown, BackgroundTransparency = 1, Size = UDim2.new(1, 0, 1, 0), CanvasSize = UDim2.new(), ScrollBarThickness = 2, ScrollingDirection = Enum.ScrollingDirection.Y, ElasticBehavior = Enum.ElasticBehavior.Never})
