@@ -139,7 +139,6 @@ local function corner(parent, r)
 end
 
 local function inset(frame)
-
     frame.BorderMode = Enum.BorderMode.Inset
     frame.BorderSizePixel = 1
     frame.BorderColor3 = BLACK
@@ -251,6 +250,7 @@ local library = {
     Connections = {},
     ToggleKey = Enum.KeyCode.J,
     Theme = Theme,
+    SearchIndex = {},
 }
 local Flags = library.Flags
 
@@ -274,7 +274,7 @@ local window = create("Frame", {
     Name = "Window", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5),
     Size = UDim2.fromOffset(windowWidth, windowHeight), BackgroundColor3 = c3(Theme.bg), Active = true, Parent = gui,
 })
-corner(window, 6)
+corner(window, 8)
 library.Window = window
 local uiscale = create("UIScale", { Scale = 1, Parent = window })
 
@@ -311,64 +311,86 @@ local main = inset(create("Frame", {
     Name = "Main", Position = UDim2.fromOffset(10, 31), Size = UDim2.new(1, -20, 1, -41),
     BackgroundColor3 = c3(Theme.bg2), Parent = window,
 }))
+corner(main, 6)
 
 local sidebar = create("Frame", { Name = "Sidebar", BackgroundTransparency = 1, Size = UDim2.new(0, 140, 1, 0), Parent = main })
 
-local LOGO_IMAGE = "rbxassetid://126305712600315"
+local LOGO_IMAGE = "rbxthumb://type=Asset&id=126305712600315&w=150&h=150"
 local LOGO_WIDTH, LOGO_HEIGHT = 101, 45
-local LOGO_MARK_TEXT = "$"
-local LOGO_MARK_X = 100
-local LOGO_MARK_Y = 15
-local LOGO_MARK_WIDTH = 19
-local LOGO_MARK_HEIGHT = 30
-local LOGO_MARK_TEXT_SIZE = 26
 create("ImageLabel", {
     Name = "Logo", BackgroundTransparency = 1, Image = LOGO_IMAGE,
     Position = UDim2.fromOffset(18, 18), Size = UDim2.fromOffset(LOGO_WIDTH, LOGO_HEIGHT),
     ScaleType = Enum.ScaleType.Fit, Parent = sidebar,
 })
-local logoMark = label(sidebar, LOGO_MARK_TEXT, {
-    Name = "LogoMark", Position = UDim2.fromOffset(LOGO_MARK_X, LOGO_MARK_Y), Size = UDim2.fromOffset(LOGO_MARK_WIDTH, LOGO_MARK_HEIGHT),
-    FontFace = FONT_SEMI, TextSize = LOGO_MARK_TEXT_SIZE, TextColor3 = c3(Theme.scheme),
-    TextXAlignment = Enum.TextXAlignment.Center, TextYAlignment = Enum.TextYAlignment.Center, ZIndex = 2,
-})
 
-local navHolder = create("Frame", { Name = "Tabs", BackgroundTransparency = 1, Position = UDim2.fromOffset(3, 77), Size = UDim2.fromOffset(134, 400), Parent = sidebar })
+local navHolder = create("Frame", { Name = "Tabs", BackgroundTransparency = 1, Position = UDim2.fromOffset(3, 77), Size = UDim2.fromOffset(134, 270), Parent = sidebar })
 
--- ANIMATED SEARCH BAR
+-- ADVANCED SEARCH BAR & DROPDOWN
 local searchFrame = create("Frame", {Name = "SearchFrame", Parent = sidebar, Position = UDim2.fromOffset(3, 360), Size = UDim2.fromOffset(134, 24), BackgroundColor3 = c3(Theme.bg3)})
 corner(searchFrame, 4)
-local searchBox = create("TextBox", {Name = "SearchBox", Parent = searchFrame, BackgroundTransparency = 1, Size = UDim2.fromScale(1,1), Text = "", PlaceholderText = "Search...", FontFace = FONT_MEDIUM, TextSize = 12, TextColor3 = c3(Theme.text), TextXAlignment = Enum.TextXAlignment.Center, ClearTextOnFocus = false})
+local searchBox = create("TextBox", {Name = "SearchBox", Parent = searchFrame, BackgroundTransparency = 1, Size = UDim2.fromScale(1,1), Text = "", PlaceholderText = "Search features...", FontFace = FONT_MEDIUM, TextSize = 12, TextColor3 = c3(Theme.text), TextXAlignment = Enum.TextXAlignment.Center, ClearTextOnFocus = false})
 local searchLine = create("Frame", {Name = "Line", Parent = searchFrame, Size = UDim2.new(0, 0, 0, 2), Position = UDim2.new(0, 0, 1, -2), BackgroundColor3 = c3(Theme.scheme), BackgroundTransparency = 1})
 local searchAnim = 0
 
-searchBox.Focused:Connect(function() searchAnim = 1 end)
-searchBox.FocusLost:Connect(function() searchAnim = 0 end)
+local searchDropdown = create("CanvasGroup", {Name = "SearchDropdown", Parent = popupLayer, BackgroundColor3 = c3(Theme.bg), Size = UDim2.fromOffset(134, 0), Position = UDim2.new(0, 0, 0, 0), GroupTransparency = 1, Visible = false, ZIndex = 150})
+corner(searchDropdown, 4)
+create("UIStroke", {Color = BLACK, Thickness = 1, ApplyStrokeMode = Enum.ApplyStrokeMode.Border, Parent = searchDropdown})
+local searchList = create("ScrollingFrame", {Parent = searchDropdown, BackgroundTransparency = 1, Size = UDim2.new(1, 0, 1, 0), CanvasSize = UDim2.new(), ScrollBarThickness = 2, ScrollingDirection = Enum.ScrollingDirection.Y, ElasticBehavior = Enum.ElasticBehavior.Never})
 
-table.insert(library.Connections, RunService.RenderStepped:Connect(function(dt)
-    local target = searchAnim == 1 and 1 or 0
-    local cur = searchLine.Size.X.Scale
-    if cur ~= target then
-        searchLine.Size = UDim2.new(lerp(cur, target, dt, 15), 0, 0, 2)
-        searchLine.BackgroundTransparency = 1 - searchLine.Size.X.Scale
-    end
-end))
-
-searchBox:GetPropertyChangedSignal("Text"):Connect(function()
+local function updateSearchDropdown()
     local query = searchBox.Text:lower()
-    for _, tab in ipairs(library.Tabs) do
-        if query == "" or tab.name:lower():find(query) then
-            tab.button.Visible = true
-        else
-            tab.button.Visible = false
+    if query == "" then
+        searchDropdown.Visible = false
+        searchDropdown.GroupTransparency = 1
+        return
+    end
+    
+    for _, child in ipairs(searchList:GetChildren()) do
+        if child:IsA("TextButton") then child:Destroy() end
+    end
+    
+    local results = {}
+    for _, entry in ipairs(library.SearchIndex) do
+        if entry.text:lower():find(query) then
+            table.insert(results, entry)
         end
     end
-end)
+    
+    if #results == 0 then
+        searchDropdown.Visible = false
+        return
+    end
+    
+    searchDropdown.Visible = true
+    local h = 0
+    for i, res in ipairs(results) do
+        local row = hitbox(searchList, UDim2.new(1, 0, 0, 24), UDim2.fromOffset(0, h), 2)
+        row.BackgroundTransparency = 1
+        row.BackgroundColor3 = c3(Theme.bg4)
+        label(row, res.text, {Position = UDim2.fromOffset(8, 4), Size = UDim2.new(1, -16, 0, 13), ZIndex = 3, TextTruncate = Enum.TextTruncate.AtEnd})
+        row.MouseButton1Click:Connect(function()
+            library:SelectTab(res.tab)
+            if res.sub then library:SelectSubtab(res.sub) end
+            searchBox.Text = ""
+            searchBox:ReleaseFocus()
+        end)
+        row.MouseEnter:Connect(function() row.BackgroundTransparency = 0 end)
+        row.MouseLeave:Connect(function() row.BackgroundTransparency = 1 end)
+        h = h + 24
+    end
+    searchList.CanvasSize = UDim2.fromOffset(0, h)
+    searchDropdown.Size = UDim2.fromOffset(134, math.min(h, 200))
+end
+
+searchBox:GetPropertyChangedSignal("Text"):Connect(updateSearchDropdown)
+searchBox.Focused:Connect(function() searchAnim = 1 end)
+searchBox.FocusLost:Connect(function() searchAnim = 0; searchDropdown.Visible = false end)
 
 local content = inset(create("Frame", {
     Name = "Content", Position = UDim2.fromOffset(140, 6), Size = UDim2.new(1, -146, 1, -12),
     BackgroundColor3 = c3(Theme.bg2), Parent = main,
 }))
+corner(content, 6)
 
 local subtabGroup = create("CanvasGroup", {
     Name = "Subtabs", BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 22), GroupTransparency = 0, Parent = content,
@@ -551,6 +573,7 @@ local function newSection(parent, x, y, h, title)
         Name = "Section_" .. title, Position = UDim2.fromOffset(x, y), Size = UDim2.fromOffset(274, h),
         BackgroundColor3 = c3(Theme.bg2), Parent = parent,
     }))
+    corner(frame, 6)
 
     local clip = create("Frame", {
         Name = "Clip", BackgroundTransparency = 1, Position = UDim2.fromOffset(5, 5),
@@ -620,7 +643,6 @@ function Section:update(dt)
 end
 
 function Section:_item(h)
-
     local item = create("CanvasGroup", {
         BackgroundTransparency = 1, GroupTransparency = 0,
         Position = UDim2.fromOffset(0, self.cursor),
@@ -648,9 +670,14 @@ function Section:_hover(obj)
 end
 
 function Section:Spacing(px)
-
     self.cursor = self.cursor - 6 + (px or 0)
     self.Holder.Size = UDim2.fromOffset(self.width, self:contentHeight())
+end
+
+function Section:RegisterSearch(text)
+    if text and self.TabName then
+        table.insert(library.SearchIndex, { text = trimLabel(text), tab = self.TabName, sub = self.SubName })
+    end
 end
 
 local BIND_MODES = { "Always On", "On Hotkey", "Toggle" }
@@ -666,6 +693,7 @@ local function makeBinder(parent, section, default, onChange, defaultMode, onMod
     frame.BackgroundTransparency = 0
     frame.BackgroundColor3 = c3(Theme.bg3)
     frame.Name = "Binder"
+    corner(frame, 4)
     local txt = label(frame, keyName(default), {
         TextSize = 11, Position = UDim2.fromOffset(4, 1), Size = UDim2.fromOffset(200, 12), ZIndex = 4,
     })
@@ -708,7 +736,7 @@ local function makeBinder(parent, section, default, onChange, defaultMode, onMod
     end
 
     modePopup = newPopup({
-        padding = 0, rounding = 3, bg = Theme.bg3, anchorHit = frame,
+        padding = 0, rounding = 4, bg = Theme.bg3, anchorHit = frame,
         place = function()
             local p = toLocal(frame.AbsolutePosition)
             return Vector2.new(p.X, p.Y + frame.AbsoluteSize.Y / uiscale.Scale + 4)
@@ -783,6 +811,7 @@ local function makeColorButton(parent, section, initial, alpha, onChange)
     frame.Name = "ColorButton"
     frame.BackgroundTransparency = 0
     frame.BackgroundColor3 = Color3.new(col[1], col[2], col[3])
+    corner(frame, 4)
     local shade = create("Frame", { BackgroundColor3 = BLACK, Size = UDim2.fromScale(1, 1), ZIndex = 4, Parent = frame })
     create("UIGradient", { Rotation = 90, Transparency = NumberSequence.new(1, 0.8), Parent = shade })
     cb.frame = frame
@@ -795,7 +824,7 @@ local function makeColorButton(parent, section, initial, alpha, onChange)
 
         local pop
         pop = newPopup({
-            padding = 14, rounding = 4, bg = Theme.bg, anchorHit = frame,
+            padding = 14, rounding = 6, bg = Theme.bg, anchorHit = frame,
             place = function() return toLocal(frame.AbsolutePosition) end,
             size = function() return 235, 206 end,
         })
@@ -841,7 +870,7 @@ local function makeColorButton(parent, section, initial, alpha, onChange)
 
         local function inputBox(x, w)
             local holder = create("Frame", { BackgroundColor3 = c3(Theme.bg3), Position = UDim2.fromOffset(x, 149), Size = UDim2.fromOffset(w, 29), ZIndex = 4, Parent = body })
-            corner(holder, 3)
+            corner(holder, 4)
             create("UIStroke", { Color = BLACK, Thickness = 1, ApplyStrokeMode = Enum.ApplyStrokeMode.Border, Parent = holder })
             local box = create("TextBox", {
                 BackgroundTransparency = 1, Position = UDim2.fromOffset(8, 0), Size = UDim2.new(1, -16, 1, 0),
@@ -973,7 +1002,7 @@ local function makeOptions(parent, section, builder)
     o.frame = frame
 
     local pop = newPopup({
-        padding = 14, rounding = 4, bg = Theme.bg, anchorHit = frame,
+        padding = 14, rounding = 6, bg = Theme.bg, anchorHit = frame,
         place = function()
             local p = toLocal(frame.AbsolutePosition)
             return Vector2.new(p.X, p.Y + frame.AbsoluteSize.Y / uiscale.Scale + 8)
@@ -1000,9 +1029,11 @@ end
 function Section:Checkbox(text, default, callback, opts)
     opts = opts or {}
     local flag = opts.flag or text
+    self:RegisterSearch(text)
     local item = self:_item(10)
     local hit = hitbox(item, UDim2.new(1, 0, 0, 10))
     local box = inset(create("Frame", { Name = "Box", BackgroundColor3 = c3(Theme.bg2), Size = UDim2.fromOffset(10, 10), Parent = item }))
+    corner(box, 2)
     local lbl = label(item, trimLabel(text), { Position = UDim2.fromOffset(15, -2), Size = UDim2.new(1, -15, 0, 13) })
 
     local value = default and true or false
@@ -1098,12 +1129,15 @@ local function formatValue(format, v, isInt)
 end
 
 function Section:_slider(text, isInt, min, max, default, callback, format, flag)
+    self:RegisterSearch(text)
     format = format or (isInt and "%d" or "%.1f")
     flag = flag or text
     local item = self:_item(21)
     local hit = hitbox(item, UDim2.new(1, 0, 0, 21))
     local bar = inset(create("Frame", { Name = "Bar", BackgroundColor3 = c3(Theme.bg2), Position = UDim2.fromOffset(15, 15), Size = UDim2.new(1, -36, 0, 6), Parent = item }))
+    corner(bar, 3)
     local fill = create("Frame", { Name = "Fill", BackgroundColor3 = c3(Theme.scheme), Size = UDim2.fromOffset(0, 6), Parent = bar })
+    corner(fill, 3)
     label(item, trimLabel(text), { Position = UDim2.fromOffset(15, 0), Size = UDim2.new(1, -86, 0, 13) })
     local valueBox = create("TextBox", {
         BackgroundTransparency = 1, Position = UDim2.new(1, -91, 0, -1.5), Size = UDim2.fromOffset(70, 16),
@@ -1179,6 +1213,7 @@ function Section:_comboBase(text)
     local item = self:_item(34)
     label(item, trimLabel(text), { Position = UDim2.fromOffset(15, 0), Size = UDim2.new(1, -36, 0, 13) })
     local box = inset(create("Frame", { Name = "Box", BackgroundColor3 = c3(Theme.bg2), Position = UDim2.fromOffset(15, 15), Size = UDim2.new(1, -36, 0, 19), Parent = item }))
+    corner(box, 4)
     local _, grad = shine(box, 0.03)
     local preview = label(box, "", { Position = UDim2.fromOffset(4, 3), Size = UDim2.new(1, -30, 0, 13), ZIndex = 2, TextTruncate = Enum.TextTruncate.AtEnd })
     local arr = arrow(box)
@@ -1196,7 +1231,7 @@ local function makeListPopup(base, items, isSelected, onPick)
     local rows = {}
     local pop
     pop = newPopup({
-        padding = 0, rounding = 2, bg = Theme.bg3, anchorHit = base.hit,
+        padding = 0, rounding = 6, bg = Theme.bg3, anchorHit = base.hit,
         place = function()
             local p = toLocal(base.box.AbsolutePosition)
             return Vector2.new(p.X, p.Y + base.box.AbsoluteSize.Y / uiscale.Scale + 4)
@@ -1250,6 +1285,7 @@ local function comboUpdater(section, base, pop, st)
 end
 
 function Section:Combo(text, items, default, callback, flag)
+    self:RegisterSearch(text)
     flag = flag or text
     items = items or {}
     local base = self:_comboBase(text)
@@ -1314,6 +1350,7 @@ function Section:Combo(text, items, default, callback, flag)
 end
 
 function Section:MultiCombo(text, items, defaults, callback, flag)
+    self:RegisterSearch(text)
     flag = flag or text
     local base = self:_comboBase(text)
     local selected = {}
@@ -1370,6 +1407,7 @@ function Section:MultiCombo(text, items, defaults, callback, flag)
 end
 
 function Section:Keybind(text, default, callback, flag, opts)
+    self:RegisterSearch(text)
     flag = flag or text
     opts = opts or {}
     local item = self:_item(14)
@@ -1396,6 +1434,7 @@ function Section:Keybind(text, default, callback, flag, opts)
 end
 
 function Section:ColorPicker(text, default, callback, alpha, flag)
+    self:RegisterSearch(text)
     flag = flag or text
     local item = self:_item(13)
     label(item, trimLabel(text), { Position = UDim2.fromOffset(0, 0), Size = UDim2.new(1, -30, 0, 13) })
@@ -1417,6 +1456,7 @@ function Section:ColorPicker(text, default, callback, alpha, flag)
 end
 
 function Section:Button(text, callback)
+    self:RegisterSearch(text)
     local shown = trimLabel(text)
 
     local item = self:_item(19)
@@ -1425,6 +1465,7 @@ function Section:Button(text, callback)
         BackgroundColor3 = c3(Theme.bg2), Position = UDim2.fromOffset(15, 0),
         Size = UDim2.new(1, -36, 0, 19), Parent = item,
     }))
+    corner(btn, 4)
     local _, grad = shine(btn, 0.03)
     local txt = label(btn, shown, {
         Size = UDim2.fromScale(1, 1), TextXAlignment = Enum.TextXAlignment.Center,
@@ -1443,6 +1484,7 @@ function Section:Button(text, callback)
 end
 
 function Section:TextInput(text, default, callback, placeholder, flag)
+    self:RegisterSearch(text)
     flag = flag or text
     local shown = trimLabel(text)
     local hasLabel = shown ~= ""
@@ -1455,6 +1497,7 @@ function Section:TextInput(text, default, callback, placeholder, flag)
         BackgroundColor3 = c3(Theme.bg2), Position = UDim2.fromOffset(15, hasLabel and 15 or 0),
         Size = UDim2.new(1, -36, 0, 19), Parent = item,
     }))
+    corner(holder, 4)
     local box = create("TextBox", {
         BackgroundTransparency = 1, Position = UDim2.fromOffset(4, 0), Size = UDim2.new(1, -8, 1, 0),
         FontFace = FONT_MEDIUM, TextSize = 13, TextColor3 = c3(Theme.text), TextXAlignment = Enum.TextXAlignment.Left,
@@ -1484,7 +1527,6 @@ function Section:Label(text)
 end
 
 function Section:Separator()
-
     local item = self:_item(1)
     local line = create("Frame", {
         BackgroundColor3 = WHITE, BackgroundTransparency = 1 - Theme.separator[4],
@@ -1529,10 +1571,12 @@ function library:AddTab(name, subtabs)
 
     local btn = hitbox(navHolder, UDim2.fromOffset(134, 32), UDim2.fromOffset(0, (index - 1) * 35))
     btn.Name = "Tab_" .. name
+    corner(btn, 4)
     create("UIStroke", { Color = BLACK, Thickness = 1, ApplyStrokeMode = Enum.ApplyStrokeMode.Border, Parent = btn })
     btn.BackgroundColor3 = c3(Theme.tab)
     btn.BackgroundTransparency = 1
     local accent = create("Frame", { Name = "Accent", BackgroundColor3 = c3(Theme.scheme), BackgroundTransparency = 1, Size = UDim2.fromOffset(3, 32), ZIndex = 2, Parent = btn })
+    corner(accent, 2)
     local txt = label(btn, name, { Position = UDim2.fromOffset(10, 9.5), Size = UDim2.fromOffset(118, 13), ZIndex = 2 })
     tab.button, tab.accent, tab.label = btn, accent, txt
     btn.MouseButton1Click:Connect(function()
@@ -1564,6 +1608,7 @@ function library:AddTab(name, subtabs)
                 TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 2,
             })
             local line = create("Frame", { BackgroundColor3 = c3(Theme.scheme), BackgroundTransparency = 1, Position = UDim2.fromOffset(0, 20), Size = UDim2.new(1, 0, 0, 2), ZIndex = 3, Parent = sb })
+            corner(line, 1)
             local entry = { button = sb, grad = grad, label = stxt, line = line, hover = 0, sel = (i == 1) and 1 or 0 }
             tab.subButtons[i] = entry
             sb.MouseButton1Click:Connect(function()
@@ -1594,6 +1639,8 @@ function library:AddSection(tabName, subName, title, column, height)
     local section = newSection(page.container, x, page.y[column], height, title or "")
     section.column = column
     section.baseY = page.y[column]
+    section.TabName = tabName
+    section.SubName = subName or tabName
     page.y[column] = page.y[column] + height + 10
     table.insert(page.sections, section)
     return section
@@ -1863,7 +1910,21 @@ connect(RunService.RenderStepped, function(dt)
         local c = Colors[k]
         for i = 1, 4 do c[i] = lerp(c[i], target[i], dt) end
     end
-    setText(logoMark, Colors.scheme)
+
+    local targetSearch = searchAnim == 1 and 1 or 0
+    local curSearch = searchLine.Size.X.Scale
+    if curSearch ~= targetSearch then
+        searchLine.Size = UDim2.new(lerp(curSearch, targetSearch, dt, 15), 0, 0, 2)
+        searchLine.BackgroundTransparency = 1 - searchLine.Size.X.Scale
+    end
+    searchLine.BackgroundColor3 = c3(Colors.scheme)
+    
+    if searchDropdown.Visible then
+        local pos = toLocal(searchFrame.AbsolutePosition)
+        searchDropdown.Position = UDim2.fromOffset(math.floor(pos.X), math.floor(pos.Y - searchDropdown.AbsoluteSize.Y - 4))
+        searchDropdown.GroupTransparency = lerp(searchDropdown.GroupTransparency, 0, dt, 15)
+    end
+
     if not State.visible then
         if State.cursorRestoreFrames > 0 then restoreMenuCursor() end
         return
@@ -2111,7 +2172,6 @@ end
 library.Unload = library.Destroy
 
 do
-
     local WATERMARK_FIELDS = {
         "Username", "Display Name", "Game", "Ping", "FPS", "Players",
         "Place ID", "Job ID", "Account Age", "User ID", "Time",
@@ -2151,10 +2211,12 @@ do
         BackgroundColor3 = Color3.fromRGB(24, 23, 23), BackgroundTransparency = 0.5,
         ZIndex = 200, Parent = gui,
     })
+    corner(watermark, 4)
     local watermarkAccent = create("Frame", {
         Name = "Accent", Position = UDim2.fromOffset(0, -3), Size = UDim2.new(1, 0, 0, 2),
         BackgroundColor3 = c3(Theme.scheme), ZIndex = 201, Parent = watermark,
     })
+    corner(watermarkAccent, 1)
     create("Frame", {
         Name = "Shadow", Position = UDim2.new(0, 0, 1, 0), Size = UDim2.new(1, 0, 0, 2),
         BackgroundColor3 = Color3.fromRGB(10, 10, 10), BackgroundTransparency = 0.45,
