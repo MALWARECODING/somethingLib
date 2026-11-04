@@ -318,9 +318,9 @@ local sidebar = create("Frame", { Name = "Sidebar", BackgroundTransparency = 1, 
 local LOGO_IMAGE = "rbxassetid://74547594363445"
 create("ImageLabel", {
     Name = "Logo", BackgroundTransparency = 1, Image = LOGO_IMAGE,
-    ImageRectOffset = Vector2.new(412, 188), 
+    ImageRectOffset = Vector2.new(412, 188),
     ImageRectSize = Vector2.new(200, 200),
-    Position = UDim2.fromOffset(10, 10), Size = UDim2.fromOffset(120, 120),
+    Position = UDim2.fromOffset(40, 10), Size = UDim2.fromOffset(60, 60),
     ScaleType = Enum.ScaleType.Fit, Parent = sidebar,
 })
 local navHolder = create("Frame", { Name = "Tabs", BackgroundTransparency = 1, Position = UDim2.fromOffset(3, 77), Size = UDim2.fromOffset(134, 270), Parent = sidebar })
