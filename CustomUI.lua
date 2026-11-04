@@ -315,7 +315,7 @@ corner(main, 6)
 
 local sidebar = create("Frame", { Name = "Sidebar", BackgroundTransparency = 1, Size = UDim2.new(0, 140, 1, 0), Parent = main })
 
-local LOGO_IMAGE = "rbxassetid://74547594363445"
+local LOGO_IMAGE = "rbxthumb://type=Asset&id=74547594363445&w=150&h=150"
 local LOGO_WIDTH, LOGO_HEIGHT = 60, 60
 create("ImageLabel", {
     Name = "Logo", BackgroundTransparency = 1, Image = LOGO_IMAGE,
