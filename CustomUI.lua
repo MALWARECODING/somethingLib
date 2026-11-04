@@ -121,16 +121,54 @@ local function textWidth(str, size)
     return #str * 7
 end
 
+-- FIXED: parent is assigned before properties so texture requests land on a
+-- live instance; each write is isolated so one bad key cannot abort the build.
 local function create(class, props)
     local o = Instance.new(class)
     if o:IsA("GuiObject") then o.BorderSizePixel = 0 end
 
     pcall(function() o.AutoLocalize = false end)
     local parent = props.Parent
-    for k, v in pairs(props) do
-        if k ~= "Parent" then o[k] = v end
-    end
     if parent then o.Parent = parent end
+    for k, v in pairs(props) do
+        if k ~= "Parent" then pcall(function() o[k] = v end) end
+    end
+    return o
+end
+
+-- FIXED: ImageLabel builder. Geometry and parenting happen first, the texture is
+-- requested afterwards, image-state props are forced, and a thumbnail fallback
+-- kicks in if the raw asset never reports as loaded.
+local function createImage(parent, props)
+    local o = Instance.new("ImageLabel")
+    o.BorderSizePixel = 0
+    pcall(function() o.AutoLocalize = false end)
+    o.Name = props.Name or "Image"
+    o.Position = props.Position or UDim2.new()
+    o.Size = props.Size or UDim2.fromOffset(80, 80)
+    o.ScaleType = props.ScaleType or Enum.ScaleType.Fit
+    o.ZIndex = props.ZIndex or 10
+    o.BackgroundTransparency = props.BackgroundTransparency or 1
+    o.BackgroundColor3 = props.BackgroundColor3 or Color3.new(1, 1, 1)
+    o.Parent = parent
+
+    o.ImageTransparency = 0
+    o.ImageColor3 = Color3.new(1, 1, 1)
+    o.Image = props.Image
+
+    local source = props.Image
+    local numeric = tostring(source):match("(%d+)")
+
+    task.defer(function()
+        if o.Parent and o.Image ~= source then o.Image = source end
+    end)
+
+    if numeric then
+        task.delay(1.5, function()
+            if not o.Parent or o.IsLoaded then return end
+            o.Image = ("rbxthumb://type=Asset&id=%s&w=150&h=150"):format(numeric)
+        end)
+    end
     return o
 end
 
@@ -314,12 +352,17 @@ local main = inset(create("Frame", {
 corner(main, 6)
 
 local sidebar = create("Frame", { Name = "Sidebar", BackgroundTransparency = 1, Size = UDim2.new(0, 140, 1, 0), Parent = main })
-create("ImageLabel", {
-    Name = "Logo", BackgroundTransparency = 1, Image = "rbxassetid://6031075930", -- Using the Roblox logo
-    Position = UDim2.fromOffset(30, 15), Size = UDim2.fromOffset(80, 80),
-    ScaleType = Enum.ScaleType.Fit, Parent = sidebar, ZIndex = 10
-})
 
+-- FIXED: texture assigned after parenting, image state forced, thumbnail fallback.
+-- Resized to 60x60 and moved to x=40 so it clears the tab column at y=77.
+createImage(sidebar, {
+    Name = "Logo",
+    Image = "rbxassetid://138969749671052",
+    Position = UDim2.fromOffset(40, 12),
+    Size = UDim2.fromOffset(60, 60),
+    ScaleType = Enum.ScaleType.Fit,
+    ZIndex = 10,
+})
 
 local navHolder = create("Frame", { Name = "Tabs", BackgroundTransparency = 1, Position = UDim2.fromOffset(3, 77), Size = UDim2.fromOffset(134, 270), Parent = sidebar })
 
