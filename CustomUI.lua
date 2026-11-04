@@ -319,7 +319,7 @@ local LOGO_IMAGE = "rbxthumb://type=Asset&id=74547594363445&w=150&h=150"
 local LOGO_WIDTH, LOGO_HEIGHT = 120, 120
 create("ImageLabel", {
     Name = "Logo", BackgroundTransparency = 1, Image = LOGO_IMAGE,
-    Position = UDim2.fromOffset(10, 10), Size = UDim2.fromOffset(LOGO_WIDTH, LOGO_HEIGHT),
+    Position = UDim2.fromOffset(120, 120), Size = UDim2.fromOffset(LOGO_WIDTH, LOGO_HEIGHT),
     ScaleType = Enum.ScaleType.Fit, Parent = sidebar,
 })
 
