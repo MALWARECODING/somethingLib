@@ -315,12 +315,14 @@ corner(main, 6)
 
 local sidebar = create("Frame", { Name = "Sidebar", BackgroundTransparency = 1, Size = UDim2.new(0, 140, 1, 0), Parent = main })
 
-local LOGO_IMAGE = "rbxassetid://107528694791059"
+local LOGO_IMAGE = "rbxassetid://6031075930" -- Known good Roblox logo
 create("ImageLabel", {
-    Name = "Logo", BackgroundTransparency = 1, Image = LOGO_IMAGE,
+    Name = "Logo", BackgroundTransparency = 0, BackgroundColor3 = Color3.fromRGB(255, 0, 0), 
+    Image = LOGO_IMAGE,
     Position = UDim2.fromOffset(30, 10), Size = UDim2.fromOffset(80, 80),
     ScaleType = Enum.ScaleType.Fit, Parent = sidebar,
 })
+
 local navHolder = create("Frame", { Name = "Tabs", BackgroundTransparency = 1, Position = UDim2.fromOffset(3, 77), Size = UDim2.fromOffset(134, 270), Parent = sidebar })
 
 -- ADVANCED SEARCH BAR & DROPDOWN
