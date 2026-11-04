@@ -314,6 +314,11 @@ local main = inset(create("Frame", {
 corner(main, 6)
 
 local sidebar = create("Frame", { Name = "Sidebar", BackgroundTransparency = 1, Size = UDim2.new(0, 140, 1, 0), Parent = main })
+create("ImageLabel", {
+    Name = "Logo", BackgroundTransparency = 1, Image = "rbxassetid://138969749671052", -- Using the Roblox logo
+    Position = UDim2.fromOffset(30, 15), Size = UDim2.fromOffset(80, 80),
+    ScaleType = Enum.ScaleType.Fit, Parent = sidebar, ZIndex = 10
+})
 
 
 local navHolder = create("Frame", { Name = "Tabs", BackgroundTransparency = 1, Position = UDim2.fromOffset(3, 77), Size = UDim2.fromOffset(134, 270), Parent = sidebar })
@@ -2443,14 +2448,5 @@ do
         end)
     end
 end
-local LOGO_IMAGE = "rbxassetid://129312029409005"
-create("ImageLabel", {
-    Name = "Logo", 
-    BackgroundTransparency = 0
-    Image = LOGO_IMAGE,
-    Position = UDim2.fromOffset(30, 10), 
-    Size = UDim2.fromOffset(80, 80),
-    ScaleType = Enum.ScaleType.Fit, 
-    Parent = sidebar,
-})
+
 return library
