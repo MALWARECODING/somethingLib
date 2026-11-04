@@ -315,7 +315,7 @@ corner(main, 6)
 
 local sidebar = create("Frame", { Name = "Sidebar", BackgroundTransparency = 1, Size = UDim2.new(0, 140, 1, 0), Parent = main })
 create("ImageLabel", {
-    Name = "Logo", BackgroundTransparency = 1, Image = "rbxassetid://138969749671052", -- Using the Roblox logo
+    Name = "Logo", BackgroundTransparency = 1, Image = "rbxassetid://6031075930", -- Using the Roblox logo
     Position = UDim2.fromOffset(30, 15), Size = UDim2.fromOffset(80, 80),
     ScaleType = Enum.ScaleType.Fit, Parent = sidebar, ZIndex = 10
 })
