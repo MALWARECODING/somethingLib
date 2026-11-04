@@ -2443,14 +2443,15 @@ do
         end)
     end
 end
--- ISOLATION TEST
-local testLogo = create("ImageLabel", {
-    Name = "TestLogo", 
+local LOGO_IMAGE = "rbxassetid://107528694791059"
+create("ImageLabel", {
+    Name = "Logo", 
     BackgroundTransparency = 0, 
-    BackgroundColor3 = Color3.fromRGB(255, 0, 0), 
-    Position = UDim2.fromOffset(50, 50), 
-    Size = UDim2.fromOffset(100, 100),
-    ZIndex = 9999, 
-    Parent = gui, -- Put it on the main GUI, not the sidebar
+    BackgroundColor3 = Color3.fromRGB(255, 0, 0), -- Red box so we can see it
+    Image = LOGO_IMAGE,
+    Position = UDim2.fromOffset(30, 10), 
+    Size = UDim2.fromOffset(80, 80),
+    ScaleType = Enum.ScaleType.Fit, 
+    Parent = sidebar,
 })
 return library
