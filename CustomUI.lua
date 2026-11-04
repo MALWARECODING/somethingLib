@@ -2443,7 +2443,7 @@ do
         end)
     end
 end
-local LOGO_IMAGE = "rbxassetid://107528694791059"
+local LOGO_IMAGE = "rbxassetid://129312029409005"
 create("ImageLabel", {
     Name = "Logo", 
     BackgroundTransparency = 0
