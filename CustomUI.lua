@@ -316,13 +316,13 @@ corner(main, 6)
 local sidebar = create("Frame", { Name = "Sidebar", BackgroundTransparency = 1, Size = UDim2.new(0, 140, 1, 0), Parent = main })
 
 local LOGO_IMAGE = "rbxassetid://74547594363445"
-local LOGO_WIDTH, LOGO_HEIGHT = 110, 110
 create("ImageLabel", {
     Name = "Logo", BackgroundTransparency = 1, Image = LOGO_IMAGE,
-    Position = UDim2.fromOffset(15, 10), Size = UDim2.fromOffset(LOGO_WIDTH, LOGO_HEIGHT),
-    ScaleType = Enum.ScaleType.Crop, Parent = sidebar,
+    ImageRectOffset = Vector2.new(412, 188), 
+    ImageRectSize = Vector2.new(200, 200),
+    Position = UDim2.fromOffset(10, 10), Size = UDim2.fromOffset(120, 120),
+    ScaleType = Enum.ScaleType.Fit, Parent = sidebar,
 })
-
 local navHolder = create("Frame", { Name = "Tabs", BackgroundTransparency = 1, Position = UDim2.fromOffset(3, 77), Size = UDim2.fromOffset(134, 270), Parent = sidebar })
 
 -- ADVANCED SEARCH BAR & DROPDOWN
