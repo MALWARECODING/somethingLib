@@ -2446,8 +2446,7 @@ end
 local LOGO_IMAGE = "rbxassetid://107528694791059"
 create("ImageLabel", {
     Name = "Logo", 
-    BackgroundTransparency = 0, 
-    BackgroundColor3 = Color3.fromRGB(255, 0, 0), -- Red box so we can see it
+    BackgroundTransparency = 0
     Image = LOGO_IMAGE,
     Position = UDim2.fromOffset(30, 10), 
     Size = UDim2.fromOffset(80, 80),
