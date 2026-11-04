@@ -316,10 +316,10 @@ corner(main, 6)
 local sidebar = create("Frame", { Name = "Sidebar", BackgroundTransparency = 1, Size = UDim2.new(0, 140, 1, 0), Parent = main })
 
 local LOGO_IMAGE = "rbxassetid://126305712600315"
-local LOGO_WIDTH, LOGO_HEIGHT = 101, 45
+local LOGO_WIDTH, LOGO_HEIGHT = 60, 60 
 create("ImageLabel", {
     Name = "Logo", BackgroundTransparency = 1, Image = LOGO_IMAGE,
-    Position = UDim2.fromOffset(18, 18), Size = UDim2.fromOffset(LOGO_WIDTH, LOGO_HEIGHT),
+    Position = UDim2.fromOffset(40, 15), Size = UDim2.fromOffset(LOGO_WIDTH, LOGO_HEIGHT), 
     ScaleType = Enum.ScaleType.Fit, Parent = sidebar,
 })
 
