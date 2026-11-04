@@ -315,7 +315,7 @@ corner(main, 6)
 
 local sidebar = create("Frame", { Name = "Sidebar", BackgroundTransparency = 1, Size = UDim2.new(0, 140, 1, 0), Parent = main })
 
-local LOGO_IMAGE = "rbxthumb://type=Asset&id=126305712600315&w=150&h=150"
+local LOGO_IMAGE = "rbxthumb://type=Asset&id=126305712600315&w=420&h=420"
 local LOGO_WIDTH, LOGO_HEIGHT = 101, 45
 create("ImageLabel", {
     Name = "Logo", BackgroundTransparency = 1, Image = LOGO_IMAGE,
@@ -332,16 +332,15 @@ local searchBox = create("TextBox", {Name = "SearchBox", Parent = searchFrame, B
 local searchLine = create("Frame", {Name = "Line", Parent = searchFrame, Size = UDim2.new(0, 0, 0, 2), Position = UDim2.new(0, 0, 1, -2), BackgroundColor3 = c3(Theme.scheme), BackgroundTransparency = 1})
 local searchAnim = 0
 
-local searchDropdown = create("CanvasGroup", {Name = "SearchDropdown", Parent = popupLayer, BackgroundColor3 = c3(Theme.bg), Size = UDim2.fromOffset(134, 0), Position = UDim2.new(0, 0, 0, 0), GroupTransparency = 1, Visible = false, ZIndex = 150})
+local searchDropdown = create("CanvasGroup", {Name = "SearchDropdown", Parent = gui, BackgroundColor3 = c3(Theme.bg), Size = UDim2.fromOffset(134, 0), Position = UDim2.new(0, 0, 0, 0), GroupTransparency = 1, Visible = false, ZIndex = 150})
 corner(searchDropdown, 4)
 create("UIStroke", {Color = BLACK, Thickness = 1, ApplyStrokeMode = Enum.ApplyStrokeMode.Border, Parent = searchDropdown})
 local searchList = create("ScrollingFrame", {Parent = searchDropdown, BackgroundTransparency = 1, Size = UDim2.new(1, 0, 1, 0), CanvasSize = UDim2.new(), ScrollBarThickness = 2, ScrollingDirection = Enum.ScrollingDirection.Y, ElasticBehavior = Enum.ElasticBehavior.Never})
 
 local function updateSearchDropdown()
-    local query = searchBox.Text:lower()
+    local query = searchBox.Text:lower():gsub("%s+", "")
     if query == "" then
         searchDropdown.Visible = false
-        searchDropdown.GroupTransparency = 1
         return
     end
     
@@ -351,7 +350,8 @@ local function updateSearchDropdown()
     
     local results = {}
     for _, entry in ipairs(library.SearchIndex) do
-        if entry.text:lower():find(query) then
+        local matchStr = entry.text:lower():gsub("%s+", "")
+        if matchStr:find(query) then
             table.insert(results, entry)
         end
     end
@@ -362,10 +362,12 @@ local function updateSearchDropdown()
     end
     
     searchDropdown.Visible = true
+    searchDropdown.GroupTransparency = 0
+    
     local h = 0
     for i, res in ipairs(results) do
         local row = hitbox(searchList, UDim2.new(1, 0, 0, 24), UDim2.fromOffset(0, h), 2)
-        row.BackgroundTransparency = 1
+        row.BackgroundTransparency = 0.9
         row.BackgroundColor3 = c3(Theme.bg4)
         label(row, res.text, {Position = UDim2.fromOffset(8, 4), Size = UDim2.new(1, -16, 0, 13), ZIndex = 3, TextTruncate = Enum.TextTruncate.AtEnd})
         row.MouseButton1Click:Connect(function()
@@ -373,18 +375,29 @@ local function updateSearchDropdown()
             if res.sub then library:SelectSubtab(res.sub) end
             searchBox.Text = ""
             searchBox:ReleaseFocus()
+            searchDropdown.Visible = false
         end)
-        row.MouseEnter:Connect(function() row.BackgroundTransparency = 0 end)
-        row.MouseLeave:Connect(function() row.BackgroundTransparency = 1 end)
+        row.MouseEnter:Connect(function() row.BackgroundTransparency = 0.8 end)
+        row.MouseLeave:Connect(function() row.BackgroundTransparency = 0.9 end)
         h = h + 24
     end
     searchList.CanvasSize = UDim2.fromOffset(0, h)
     searchDropdown.Size = UDim2.fromOffset(134, math.min(h, 200))
+    
+    local pos = toLocal(searchFrame.AbsolutePosition)
+    searchDropdown.Position = UDim2.fromOffset(math.floor(pos.X), math.floor(pos.Y - searchDropdown.AbsoluteSize.Y - 4))
 end
 
 searchBox:GetPropertyChangedSignal("Text"):Connect(updateSearchDropdown)
 searchBox.Focused:Connect(function() searchAnim = 1 end)
-searchBox.FocusLost:Connect(function() searchAnim = 0; searchDropdown.Visible = false end)
+searchBox.FocusLost:Connect(function() 
+    searchAnim = 0
+    task.delay(0.2, function()
+        if not searchBox:IsFocused() then
+            searchDropdown.Visible = false
+        end
+    end)
+end)
 
 local content = inset(create("Frame", {
     Name = "Content", Position = UDim2.fromOffset(140, 6), Size = UDim2.new(1, -146, 1, -12),
@@ -736,7 +749,7 @@ local function makeBinder(parent, section, default, onChange, defaultMode, onMod
     end
 
     modePopup = newPopup({
-        padding = 0, rounding = 4, bg = Theme.bg3, anchorHit = frame,
+        padding = 0, rounding = 6, bg = Theme.bg3, anchorHit = frame,
         place = function()
             local p = toLocal(frame.AbsolutePosition)
             return Vector2.new(p.X, p.Y + frame.AbsoluteSize.Y / uiscale.Scale + 4)
@@ -1922,7 +1935,6 @@ connect(RunService.RenderStepped, function(dt)
     if searchDropdown.Visible then
         local pos = toLocal(searchFrame.AbsolutePosition)
         searchDropdown.Position = UDim2.fromOffset(math.floor(pos.X), math.floor(pos.Y - searchDropdown.AbsoluteSize.Y - 4))
-        searchDropdown.GroupTransparency = lerp(searchDropdown.GroupTransparency, 0, dt, 15)
     end
 
     if not State.visible then
